@@ -48,46 +48,36 @@ log_message <- function(..., log_file = "results/analysis_log.txt") {
   })
 }
 
-# Enhanced error handling and logging function
+#' Handle errors with logging
+#' @param expr Expression to evaluate
+#' @param operation_name Name of the operation for logging
+#' @return The result of the expression if successful, NULL if failed
 handle_error_with_logging <- function(expr, operation_name) {
   tryCatch({
-    expr()
+    result <- expr()
+    if (is.null(result)) {
+      log_message(sprintf("\nOperation '%s' returned NULL, indicating failure\n", operation_name))
+      return(NULL)
+    }
+    return(result)
   }, error = function(e) {
-    # Get the call stack
-    calls <- sys.calls()
-    call_stack <- paste(sapply(calls, function(call) paste(deparse(call), collapse="\n")), collapse="\n")
-    
-    # Log detailed error information with better formatting
-    log_message("\n╔══════════════════════════════════════════════════════════════════════════════╗\n")
-    log_message("║ ❌ ERROR in ", operation_name, "\n")
-    log_message("╠══════════════════════════════════════════════════════════════════════════════╣\n")
-    log_message("║ Error message: ", conditionMessage(e), "\n")
-    log_message("║ Error location: ", as.character(e$call), "\n")
-    
-    # If there's data involved in the error, log its structure
-    error_env <- parent.frame()
-    if (exists("data", error_env)) {
-      data_obj <- get("data", error_env)
-      log_message("║ Data structure involved:\n")
-      con <- textConnection("output", "w", local = TRUE)
-      tryCatch({
-        str(data_obj, file = con)
-        log_message("║ ", paste(output, collapse = "\n║ "), "\n")
-      }, finally = {
-        close(con)
-      })
-    }
-    
-    # Log the call stack
-    log_message("║ Call stack:\n")
-    for (i in seq_along(calls)) {
-      log_message("║   ", i, ": ", deparse(calls[[i]]), "\n")
-    }
-    log_message("╚══════════════════════════════════════════════════════════════════════════════╝\n")
-    
-    # Re-throw the error to maintain the error state
-    stop(sprintf("Operation failed: %s - %s", operation_name, e$message))
+    log_message(sprintf("\nError in %s: %s\n", operation_name, e$message))
+    return(NULL)
   })
+}
+
+#' Stop on error with logging
+#' @param expr Expression to evaluate
+#' @param step_name Name of the step for logging
+#' @return TRUE if successful, FALSE otherwise
+stop_on_error <- function(expr, step_name) {
+  success <- handle_error_with_logging(expr, step_name)
+  if (!success) {
+    log_message(sprintf("\nStep '%s' failed\n", step_name))
+    return(FALSE)
+  }
+  log_message(sprintf("✓ %s completed successfully\n", step_name))
+  return(TRUE)
 }
 
 # Function to create project directory structure
@@ -128,44 +118,81 @@ convert_nor_month_year <- function(x) {
 
 # Function to process newspaper EPU data
 process_newspaper <- function(file_path_EPU, file_path_All, skip_val = 1) {
-  handle_error_with_logging(function() {
+  result <- handle_error_with_logging(function() {
+    # Log the files being processed
+    log_message(sprintf("Processing files: %s and %s\n", basename(file_path_EPU), basename(file_path_All)))
+    
     # Read Excel files for EPU counts and total article counts
-    df_EPU <- suppressMessages(read_excel(file_path_EPU, col_names = FALSE, skip = skip_val))
-    df_All <- suppressMessages(read_excel(file_path_All, col_names = FALSE, skip = skip_val))
-    
-    # Rename columns
-    names(df_EPU) <- c("Date", "EPU_Count")
-    names(df_All) <- c("Date", "All_Count")
-    
-    # Convert the Date column
-    df_EPU$Date <- convert_nor_month_year(df_EPU$Date)
-    df_All$Date <- convert_nor_month_year(df_All$Date)
-    
-    # Compute the fraction of EPU articles for each month
-    df <- df_EPU %>%
-      mutate(All_Count = df_All$All_Count,
-             Fraction = EPU_Count / All_Count)
-    
-    # Compute the standard deviation over the base period for this newspaper
-    sigma_i <- sd(df$Fraction[df$Date >= base_period_start & df$Date <= base_period_end],
-                  na.rm = TRUE)
-    
-    # Create a standardized series: divide each fraction by the base period's sigma
-    df <- df %>% mutate(Std_Fraction = Fraction / sigma_i)
-    
-    # Return only the Date and standardized fraction columns
-    return(dplyr::select(df, Date, Std_Fraction))
+    tryCatch({
+      df_EPU <- suppressMessages(read_excel(file_path_EPU, col_names = FALSE, skip = skip_val))
+      df_All <- suppressMessages(read_excel(file_path_All, col_names = FALSE, skip = skip_val))
+      
+      # Validate data frames
+      if (!is.data.frame(df_EPU) || !is.data.frame(df_All)) {
+        stop("Input files must contain valid data frames")
+      }
+      
+      if (ncol(df_EPU) < 2 || ncol(df_All) < 2) {
+        stop("Input files must have at least 2 columns")
+      }
+      
+      # Rename columns
+      names(df_EPU) <- c("Date", "EPU_Count")
+      names(df_All) <- c("Date", "All_Count")
+      
+      # Convert the Date column
+      df_EPU$Date <- convert_nor_month_year(df_EPU$Date)
+      df_All$Date <- convert_nor_month_year(df_All$Date)
+      
+      # Validate date conversion
+      if (any(is.na(df_EPU$Date)) || any(is.na(df_All$Date))) {
+        stop("Date conversion failed - check date format in input files")
+      }
+      
+      # Ensure numeric columns
+      df_EPU$EPU_Count <- as.numeric(df_EPU$EPU_Count)
+      df_All$All_Count <- as.numeric(df_All$All_Count)
+      
+      # Log any NA values in the counts
+      na_epu <- sum(is.na(df_EPU$EPU_Count))
+      na_all <- sum(is.na(df_All$All_Count))
+      if (na_epu > 0 || na_all > 0) {
+        log_message(sprintf("Warning: Found %d NA values in EPU counts and %d NA values in All counts\n", 
+                          na_epu, na_all))
+      }
+      
+      # Compute the fraction of EPU articles for each month
+      df <- df_EPU %>%
+        mutate(All_Count = df_All$All_Count,
+               Fraction = EPU_Count / All_Count)
+      
+      # Compute the standard deviation over the base period for this newspaper
+      sigma_i <- sd(df$Fraction[df$Date >= base_period_start & df$Date <= base_period_end],
+                    na.rm = TRUE)
+      
+      if (is.na(sigma_i) || sigma_i == 0) {
+        stop("Standard deviation calculation failed - check data values")
+      }
+      
+      # Create a standardized series: divide each fraction by the base period's sigma
+      df <- df %>% mutate(Std_Fraction = Fraction / sigma_i)
+      
+      # Return only the Date and standardized fraction columns
+      result <- dplyr::select(df, Date, Std_Fraction)
+      
+      # Log success
+      log_message(sprintf("Successfully processed %s\n", basename(file_path_EPU)))
+      
+      return(result)
+    }, error = function(e) {
+      log_message(sprintf("Error processing files: %s\n", e$message))
+      stop(e)
+    })
   }, sprintf("Processing newspaper data: %s", basename(file_path_EPU)))
-}
-
-# Function to handle errors and stop execution
-stop_on_error <- function(expr, step_name) {
-  handle_error_with_logging(
-    function() {
-      expr
-      log_message("✓ ", step_name, " completed successfully\n")
-      return(TRUE)
-    },
-    step_name
-  )
+  
+  if (is.null(result)) {
+    stop("Failed to process newspaper data")
+  }
+  
+  return(result)
 }

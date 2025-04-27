@@ -1,6 +1,10 @@
 # Data Cleaning Script
 # This script cleans and processes all raw data files
 
+# Define base period for analysis
+base_period_start <- as.Date("2001-01-01")
+base_period_end <- as.Date("2024-12-31")
+
 # Suppress "New names" messages and other unnecessary output
 options(readr.show_col_types = FALSE)
 options(readxl.show_col_types = FALSE)
@@ -14,6 +18,7 @@ dir.create("data/processed/analyzed", recursive = TRUE, showWarnings = FALSE)
 # Process Norwegian EPU data
 log_message("Processing Norwegian EPU data...\n")
 # Read and process all newspaper datasets
+log_message("Processing individual newspaper datasets...\n")
 vgnettsøk_df         <- process_newspaper("data/raw/vgnettsøk.xlsx",         "data/raw/vgaltannet.xlsx")
 dagbladetsøk_df      <- process_newspaper("data/raw/dagbladetsøk.xlsx",      "data/raw/dagbladetaltannet.xlsx")
 nrksøk_df            <- process_newspaper("data/raw/nrksøk.xlsx",            "data/raw/nrkaltannet.xlsx")
@@ -22,19 +27,27 @@ dnsøk_df             <- process_newspaper("data/raw/dnsøk.xlsx",             "
 vgpapirsøk_df        <- process_newspaper("data/raw/vgpapirsøk.xlsx",        "data/raw/vgaltannetpapir.xlsx")
 
 # Combine and aggregate the standardized series
-df_all <- bind_rows(vgnettsøk_df, dagbladetsøk_df, nrksøk_df, 
-                    aftenpostensøk_df, dnsøk_df, vgpapirsøk_df)
-
-epu_monthly <- df_all %>% 
-  group_by(Date) %>% 
-  summarise(Avg_Std_Fraction = mean(Std_Fraction, na.rm = TRUE)) %>% 
-  ungroup()
-
-# Complete the monthly sequence
-all_months <- data.frame(Date = seq.Date(from = base_period_start,
-                                        to   = base_period_end,
-                                        by   = "month"))
-epu_monthly <- merge(all_months, epu_monthly, by = "Date", all.x = TRUE)
+log_message("Combining data frames...\n")
+tryCatch({
+  df_all <- bind_rows(vgnettsøk_df, dagbladetsøk_df, nrksøk_df, 
+                      aftenpostensøk_df, dnsøk_df, vgpapirsøk_df)
+  
+  epu_monthly <- df_all %>% 
+    group_by(Date) %>% 
+    summarise(Avg_Std_Fraction = mean(Std_Fraction, na.rm = TRUE)) %>% 
+    ungroup()
+  
+  # Complete the monthly sequence
+  all_months <- data.frame(Date = seq.Date(from = base_period_start,
+                                          to   = base_period_end,
+                                          by   = "month"))
+  
+  epu_monthly <- merge(all_months, epu_monthly, by = "Date", all.x = TRUE)
+  
+}, error = function(e) {
+  log_message(sprintf("Error combining data frames: %s\n", e$message))
+  stop(e)
+})
 
 # Normalize the aggregated series to a base mean of 100
 base_period_data <- epu_monthly %>% 
