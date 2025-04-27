@@ -1,0 +1,180 @@
+---
+title: "MasterFAA: Interactive Analysis"
+author: "Olav Heggelund"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: cosmo
+    highlight: tango
+    code_folding: show
+---
+
+# Setup and Requirements
+
+Before running this analysis, ensure you have:
+1. Opened the project in RStudio (`MasterFAA.Rproj`)
+2. Installed required packages using `renv::restore()`
+
+```{r setup, echo=TRUE}
+# Load required packages
+library(dplyr)      # For data manipulation
+library(ggplot2)    # For plotting
+library(xts)        # For time series
+library(vars)       # For VAR modeling
+library(knitr)      # For report generation
+
+# Configure output settings
+knitr::opts_chunk$set(
+  echo = FALSE,     # Don't show code by default
+  warning = FALSE,  # Don't show warnings
+  message = FALSE,  # Don't show messages
+  fig.width = 10,   # Figure width
+  fig.height = 6,   # Figure height
+  fig.align = "center"
+)
+```
+
+# Running the Analysis
+
+This document provides an interactive way to explore the MasterFAA analysis results. You can:
+
+1. **View the Analysis**: Click "Knit" to generate a complete HTML report
+2. **Explore Code**: Use the code fold buttons (▶) to see the R code
+3. **Modify Parameters**: Edit code chunks to customize the analysis
+
+The analysis is organized in these main sections:
+- EPU Index Construction and Comparison
+- Financial Market Analysis
+- VAR Model Results
+- Key Findings
+
+```{r run_analysis, echo=TRUE}
+# Run the full analysis pipeline
+source("R/01_data_cleaning.R")  # Clean and prepare data
+source("R/02_analysis.R")       # Perform analysis
+source("R/03_models.R")         # Run VAR models
+source("R/04_visualization.R")  # Create visualizations
+```
+
+# Results
+
+## 1. EPU Indices
+
+### Norwegian and Eurozone EPU Comparison
+
+```{r epu_plot, fig.cap="Norwegian and Eurozone EPU Indices (Base Period Mean = 100)"}
+knitr::include_graphics("output/figures/epu_indices.png")
+```
+
+The figure shows how economic policy uncertainty has evolved in Norway and the Eurozone. Key observations:
+- Peaks during major economic events
+- Different patterns between regions
+- Recent trends and developments
+
+### Relative EPU Analysis
+
+```{r relative_epu_plot, fig.cap="Relative EPU: Norway vs Eurozone"}
+knitr::include_graphics("output/figures/relative_epu.png")
+```
+
+This shows the difference between Norwegian and Eurozone EPU, highlighting:
+- Periods of higher uncertainty in Norway
+- Periods of higher uncertainty in the Eurozone
+- Regional policy divergence
+
+## 2. Financial Market Analysis
+
+```{r financial_plot, fig.cap="Key Financial Market Indicators", fig.height=8}
+# Load the data
+vix_data <- readRDS("data/processed/cleaned/vix_data.rds")
+oil_data <- readRDS("data/processed/cleaned/oil_data.rds")
+exch_data <- readRDS("data/processed/cleaned/exchange_rate.rds")
+
+# Create a multi-panel plot
+par(mfrow=c(3,1), mar=c(4,4,2,2))
+
+# VIX Plot
+plot(vix_data$Date, vix_data$VIX, 
+     type="l", col="darkblue", 
+     main="VIX Index (Global Market Volatility)",
+     xlab="", ylab="VIX")
+
+# Oil Price Plot
+plot(oil_data$Date, oil_data$OilPrice, 
+     type="l", col="darkgreen",
+     main="Brent Oil Price",
+     xlab="", ylab="USD/Barrel")
+
+# Exchange Rate Plot
+plot(exch_data$Date, exch_data$EURNOK, 
+     type="l", col="darkred",
+     main="EUR/NOK Exchange Rate",
+     xlab="Date", ylab="Rate")
+```
+
+The analysis includes three key financial indicators:
+- VIX Index: Global market volatility indicator
+- Oil Price: A key factor for the Norwegian economy
+- EUR/NOK Exchange Rate: Our main variable of interest
+
+## 3. VAR Model Results
+
+### Impulse Response Analysis
+
+```{r irf_plot, fig.cap="Response of Exchange Rate to EPU Shocks"}
+knitr::include_graphics("output/figures/irf_epu.png")
+```
+
+The impulse response functions show:
+- Initial impact of EPU shocks
+- Duration of the effects
+- Confidence intervals
+
+### Variance Decomposition
+
+```{r fevd_plot, fig.cap="Variance Decomposition of Exchange Rate Movements"}
+knitr::include_graphics("output/figures/fevd.png")
+```
+
+This shows the relative importance of different factors in explaining exchange rate movements.
+
+# Key Findings
+
+1. **EPU Effects**
+   - Significant impact on exchange rates
+   - Different effects from Norwegian vs Eurozone uncertainty
+   - Time-varying relationship
+
+2. **Market Interactions**
+   - Role of global volatility
+   - Oil price importance
+   - Policy transmission channels
+
+3. **Policy Implications**
+   - Monetary policy considerations
+   - Exchange rate management
+   - Economic stability factors
+
+# Technical Notes
+
+For those interested in the technical implementation:
+
+```{r technical_details, echo=TRUE, eval=FALSE}
+# Analysis files and their purposes:
+# R/01_data_cleaning.R  - Data preparation and cleaning
+# R/02_analysis.R       - Main analysis functions
+# R/03_models.R         - VAR model estimation
+# R/04_visualization.R  - Plot generation
+```
+
+# Conclusion
+
+This analysis demonstrates the complex relationship between economic policy uncertainty and exchange rates in Norway and the Eurozone. The results suggest significant interactions between policy uncertainty, global market conditions, and exchange rate dynamics.
+
+For implementation details, see the main README.md file.
+
+```{r session_info, echo=FALSE}
+sessionInfo()
+```

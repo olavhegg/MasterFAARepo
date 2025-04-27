@@ -420,7 +420,7 @@ str(nb_data)
 nb_data$Date <- as.Date(nb_data$Date, format = "%Y-%m-%d")
 
 # Convert the NB data to an xts object:
-nb_xts <- xts(nb_data$NBRate, order.by = nb_data$Date)
+nb_xts <- xts(nb_data$Rate, order.by = nb_data$Date)
 head(nb_xts)
 
 ###############################################################################

@@ -4,156 +4,175 @@ This project analyzes the relationship between Economic Policy Uncertainty (EPU)
 
 ## Project Overview
 
-The project consists of several key components:
-1. Data collection and processing of EPU indices for Norway and the Eurozone
-2. Construction of control variables (VIX, oil prices, interest rates, inflation)
-3. Statistical analysis using VAR models
-4. Visualization of results and key findings
+MasterFAA is a comprehensive economic analysis project that:
 
-## Project Structure
+1. Constructs EPU indices for Norway and the Eurozone
+2. Analyzes the relationship between EPU and exchange rates
+3. Investigates the impact of various control variables
+4. Provides visualizations and statistical insights
 
-```
-MasterFAA/
-├── data/
-│   ├── raw/             # Original, unmodified data files
-│   ├── processed/       # Cleaned and transformed data
-│   └── external/        # Data from external sources
-├── R/
-│   ├── 01_data_cleaning.R    # Data import and initial processing
-│   ├── 02_analysis.R         # Data transformation and preparation
-│   ├── 03_models.R           # VAR model estimation and diagnostics
-│   ├── 04_visualization.R    # Generation of plots and tables
-│   └── utils.R               # Helper functions
-├── output/
-│   ├── figures/         # Plots and charts
-│   ├── tables/          # Result tables
-│   └── models/          # Saved model objects
-├── doc/                 # Documentation
-│   ├── thesis/          # Thesis chapters
-│   └── notes/           # Research notes
-├── results/             # Final outputs
-├── MasterFAA.Rproj      # RStudio project file
-├── main.R               # Master script
-└── renv.lock            # Package dependencies
-```
+For setup instructions, please see [SETUP.md](SETUP.md).
 
-## Data Sources
+## Interactive Analysis
 
-### Primary Data
-- **Norwegian EPU**: Constructed from major Norwegian newspapers (VG, Dagbladet, NRK, Aftenposten, DN)
-- **Eurozone EPU**: GDP-weighted average of EPU indices from Eurozone countries
-- **Exchange Rates**: EUR/NOK daily spot rates
+The project includes an interactive R Markdown document (`analysis.Rmd`) that provides a step-by-step walkthrough of the analysis. This document:
 
-### Control Variables
-- **Market Volatility**: VIX index from CBOE
-- **Commodity Prices**: Brent crude oil prices
-- **Monetary Policy**: 
-  - ECB deposit facility rate
-  - Norges Bank policy rate
-- **Inflation**: 
-  - Norwegian CPI from Statistics Norway
-  - Eurozone HICP from Eurostat
+1. Explains each component of the analysis in detail
+2. Allows for interactive exploration of the results
+3. Provides visualizations and interpretations
+4. Can be run either as a complete analysis or step-by-step
 
-## Required R Packages
+To use the interactive analysis:
+1. Open `analysis.Rmd` in RStudio
+2. Click "Knit" to generate the HTML report
+3. Follow the step-by-step instructions
 
-```r
-install.packages(c(
-  "readxl",      # Excel file import
-  "dplyr",       # Data manipulation
-  "stringr",     # String operations
-  "lubridate",   # Date handling
-  "ggplot2",     # Plotting
-  "tidyr",       # Data tidying
-  "xts",         # Time series objects
-  "zoo",         # Time series operations
-  "tseries",     # Time series analysis
-  "vars",        # VAR modeling
-  "here"         # Project directory management
-))
-```
+The R Markdown document is organized into four main sections:
+- Data Cleaning and Preparation
+- Analysis and Transformation
+- Statistical Modeling
+- Visualization and Results
 
-## How to Run the Analysis
+Each section can be run independently, allowing for focused exploration of specific aspects of the analysis.
 
-1. **Setup**:
-   ```bash
-   # Clone the repository
-   git clone https://github.com/olavhegg/MasterFAARepo.git
-   cd MasterFAARepo
-   ```
+## Code Structure and Functionality
 
-2. **Install Dependencies**:
-   ```r
-   # Install required packages
-   install.packages(c("readxl", "dplyr", "stringr", "lubridate", "ggplot2", 
-                     "tidyr", "xts", "zoo", "tseries", "vars", "here"))
-   ```
+### Core Components
 
-3. **Prepare Data**:
-   - Place raw data files in `data/raw/`:
-     - Newspaper EPU counts
-     - VIX data
-     - Oil price data
-     - Exchange rate data
-     - Interest rate data
-     - Inflation data
+#### 1. Data Processing (`R/01_data_cleaning.R`)
+- **Norwegian EPU Data Processing**
+  - Processes newspaper articles from multiple sources
+  - Standardizes EPU counts across different newspapers
+  - Creates a weighted EPU index for Norway
 
-4. **Run Analysis**:
-   ```r
-   # Open RStudio and load the project
-   # Then run the main script
-   source("main.R")
-   ```
+- **Eurozone EPU Data Processing**
+  - Processes EPU data from multiple Eurozone countries
+  - Creates a GDP-weighted EPU index for the Eurozone
+  - Handles missing data and standardization
 
-## Output
+- **Financial Data Processing**
+  - Processes VIX, oil prices, and exchange rate data
+  - Calculates returns and volatility measures
+  - Handles date alignment and missing values
 
-The analysis generates several types of output:
+#### 2. Analysis (`R/02_analysis.R`)
+- **Relative EPU Calculation**
+  - Computes the difference between Norwegian and Eurozone EPU
+  - Handles temporal alignment of indices
+  - Creates standardized measures for comparison
 
-### Data Files (`data/processed/`)
-- Cleaned and transformed time series
-- Standardized EPU indices
-- Derived variables (returns, volatility measures)
+- **Financial Market Analysis**
+  - Processes VIX returns and oil price volatility
+  - Calculates exchange rate returns
+  - Computes interest rate differentials
 
-### Statistical Results (`output/tables/`)
-- ADF test results
-- VAR model diagnostics
-- Summary statistics
-- Lag selection criteria
+- **Inflation Analysis**
+  - Processes Norwegian and Eurozone inflation data
+  - Calculates inflation volatility measures
+  - Creates relative inflation volatility series
 
-### Visualizations (`output/figures/`)
-- EPU index comparisons
-- Impulse response functions
-- Forecast error variance decomposition
-- Time series plots
+#### 3. Modeling (`R/03_models.R`)
+- **VAR Model Implementation**
+  - Performs stationarity tests
+  - Selects optimal lag length
+  - Estimates VAR model parameters
 
-### Model Objects (`output/models/`)
-- Estimated VAR models
-- IRF results
-- FEVD results
+- **Impulse Response Analysis**
+  - Generates impulse response functions
+  - Computes forecast error variance decomposition
+  - Analyzes shock propagation
 
-## Code Organization
+- **Model Diagnostics**
+  - Performs stability tests
+  - Checks for autocorrelation
+  - Validates model assumptions
 
-- `utils.R`: Contains helper functions for data processing
-- `01_data_cleaning.R`: Data import and initial processing
-- `02_analysis.R`: Data transformation and preparation
-- `03_models.R`: VAR model estimation and diagnostics
-- `04_visualization.R`: Generation of plots and tables
-- `main.R`: Orchestrates the entire analysis pipeline
+#### 4. Visualization (`R/04_visualization.R`)
+- **EPU Index Visualization**
+  - Creates comparative plots of EPU indices
+  - Visualizes relative EPU measures
+  - Generates time series plots
+
+- **Model Results Visualization**
+  - Plots impulse response functions
+  - Creates variance decomposition charts
+  - Generates diagnostic plots
+
+- **Summary Statistics**
+  - Creates descriptive statistics tables
+  - Generates correlation matrices
+  - Produces summary plots
+
+### Utility Functions (`R/utils.R`)
+- **Logging System**
+  - Implements robust logging with UTF-8 encoding
+  - Provides error handling and debugging
+  - Creates structured log output
+
+- **Data Processing Utilities**
+  - Handles Norwegian date formats
+  - Processes newspaper data
+  - Manages file operations
+
+## Key Features
+
+1. **Robust Data Processing**
+   - Handles multiple data sources
+   - Implements standardized cleaning procedures
+   - Manages missing data effectively
+
+2. **Advanced Statistical Analysis**
+   - Implements VAR modeling
+   - Performs comprehensive diagnostics
+   - Generates detailed statistical outputs
+
+3. **Professional Visualization**
+   - Creates publication-quality plots
+   - Implements consistent styling
+   - Generates comprehensive visual summaries
+
+4. **Error Handling and Logging**
+   - Implements robust error catching
+   - Provides detailed logging
+   - Maintains analysis traceability
+
+## Output Files
+
+### Figures
+- `epu_indices.png`: Norwegian and Eurozone EPU comparison
+- `relative_epu.png`: Relative EPU time series
+- `irf_epu.png`: Impulse response functions
+- `fevd.png`: Forecast error variance decomposition
+
+### Tables
+- `summary_statistics.csv`: Descriptive statistics
+- `adf_test_results.rds`: Stationarity test results
+- `lag_selection.rds`: VAR lag selection criteria
+
+### Models
+- `var_model.rds`: Estimated VAR model
+- `irf_epu.rds`: Impulse response results
+- `irf_exch.rds`: Exchange rate responses
+- `fevd_results.rds`: Variance decomposition results
+
+## Dependencies
+
+The project uses `renv` for package management. Key packages include:
+
+- `dplyr` for data manipulation
+- `ggplot2` for plotting
+- `xts` and `zoo` for time series handling
+- `vars` for VAR modeling
+- `tseries` for time series analysis
+- `readxl` for Excel file reading
+- `tidyr` for data tidying
+- `lubridate` for date handling
+- `stringr` for string manipulation
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contact
-
-For questions or suggestions, please contact:
-- Olav Heggelund
-- Email: olav.heggelund@soprasteria.com
-- GitHub: [@olavhegg](https://github.com/olavhegg)

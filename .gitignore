@@ -1,0 +1,45 @@
+# R specific
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# Data files
+/data/processed/*
+!/data/processed/.gitkeep
+
+# Output and results
+/output/figures/*
+/output/tables/*
+/output/models/*
+!/output/figures/.gitkeep
+!/output/tables/.gitkeep
+!/output/models/.gitkeep
+/results/*
+!/results/.gitkeep
+
+# System files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE specific
+.vscode/
+.idea/
+
+# Log files
+*.log
+analysis_log.txt
+
+# Temporary files
+*.tmp
+*.temp
+~$*.xlsx
+~$*.xls
+~$*.doc*
+~$*.ppt*
+
+# Keep empty directories
+!/**/.gitkeep
